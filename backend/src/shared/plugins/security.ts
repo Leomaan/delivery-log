@@ -16,7 +16,7 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
   });
 
   await app.register(rateLimit, {
-    max: 100,
+    max: env.NODE_ENV === 'production' ? 300 : 1000,
     timeWindow: '1 minute',
   });
 }

@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { Ban, CheckCircle2, Plus } from 'lucide-react';
 import { api, type Delivery, type Place } from '../lib/api';
 import { formatCentsToBRL, formatIsoDateToBR, getTodayIsoDate } from '../lib/money';
@@ -8,7 +8,7 @@ interface DeliveriesViewProps {
 }
 
 export function DeliveriesView({ places }: DeliveriesViewProps) {
-  const activePlaces = places.filter((p) => p.active);
+  const activePlaces = useMemo(() => places.filter((p) => p.active), [places]);
 
   const [date, setDate] = useState<string>(getTodayIsoDate());
   const [selectedPlaceId, setSelectedPlaceId] = useState<number>(activePlaces[0]?.id ?? 0);
