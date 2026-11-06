@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  active        Boolean        @default(true)
+  refreshTokens RefreshToken[]
+  deliveries    Delivery[]
+  createdAt     DateTime       @default(now())
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Place {
+  id         Int        @id @default(autoincrement())
+  name       String
+  active     Boolean    @default(true)
+  prices     Price[]
+  deliveries Delivery[]
+  createdAt  DateTime   @default(now())
+}
+
+model Price {
+  id        Int       @id @default(autoincrement())
+  placeId   Int
+  unitCents Int
+  validFrom DateTime  @db.Date
+  validTo   DateTime? @db.Date
+  place     Place     @relation(fields: [placeId], references: [id])
+
+  @@index([placeId, validFrom])
+}
+
+model Delivery {
+  id           Int       @id @default(autoincrement())
+  placeId      Int
+  createdBy    Int
+  date         DateTime  @db.Date
+  quantity     Int
+  unitCents    Int       // frozen at creation time
+  totalCents   Int
+  canceledAt   DateTime?
+  cancelReason String?
+  place        Place     @relation(fields: [placeId], references: [id])
+  user         User      @relation(fields: [createdBy], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@index([placeId, date])
+}
