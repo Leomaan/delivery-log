@@ -27,7 +27,6 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
   const [totalQuantity, setTotalQuantity] = useState(0);
   const [totalDeliveredCents, setTotalDeliveredCents] = useState(0);
   const [filterPlaceId, setFilterPlaceId] = useState<string>('');
-  const [includeCanceled, setIncludeCanceled] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(
@@ -61,12 +60,12 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
   const loadDeliveries = useCallback(async () => {
     const res = await api.listDeliveries({
       placeId: filterPlaceId ? Number(filterPlaceId) : undefined,
-      includeCanceled,
+      includeCanceled: true,
     });
     setDeliveries(res.items);
     setTotalQuantity(res.totalQuantity);
     setTotalDeliveredCents(res.totalDeliveredCents);
-  }, [filterPlaceId, includeCanceled]);
+  }, [filterPlaceId]);
 
   useEffect(() => {
     void loadActivePrices();
@@ -75,6 +74,16 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
   useEffect(() => {
     void loadDeliveries();
   }, [loadDeliveries]);
+
+  const activeDeliveries = useMemo(
+    () => deliveries.filter((item) => item.canceledAt === null),
+    [deliveries],
+  );
+
+  const canceledDeliveries = useMemo(
+    () => deliveries.filter((item) => item.canceledAt !== null),
+    [deliveries],
+  );
 
   const currentUnitCents = activePricesByPlace[selectedPlaceId] ?? null;
   const parsedQty = Number.parseInt(quantity, 10);
@@ -254,18 +263,18 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
         </form>
       </section>
 
-      {/* Histórico de Lançamentos */}
+      {/* Seção 1: Registros Ativos */}
       <section className="bg-white border border-slate-200 rounded-xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Registros Lançados</h3>
+            <h3 className="text-base font-semibold text-slate-900">Registros Ativos</h3>
             <p className="text-xs text-slate-500">
-              Total listado ({String(totalQuantity)} quentinhas):{' '}
+              Total válido ({String(totalQuantity)} quentinhas):{' '}
               <strong className="text-blue-600">{formatCentsToBRL(totalDeliveredCents)}</strong>
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
             <select
               value={filterPlaceId}
               onChange={(e) => setFilterPlaceId(e.target.value)}
@@ -278,16 +287,6 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                 </option>
               ))}
             </select>
-
-            <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeCanceled}
-                onChange={(e) => setIncludeCanceled(e.target.checked)}
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-600"
-              />
-              Mostrar cancelados
-            </label>
           </div>
         </div>
 
@@ -304,23 +303,19 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {deliveries.length === 0 ? (
+              {activeDeliveries.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                    Nenhum registro encontrado.
+                    Nenhum registro ativo encontrado.
                   </td>
                 </tr>
               ) : (
-                deliveries.map((item) => {
-                  const isCanceled = item.canceledAt !== null;
+                activeDeliveries.map((item) => {
                   const isEditing = editingId === item.id;
                   const isCanceling = cancelingId === item.id;
 
                   return (
-                    <tr
-                      key={item.id}
-                      className={isCanceled ? 'bg-slate-50 text-slate-400 line-through' : ''}
-                    >
+                    <tr key={item.id}>
                       <td className="py-3 pr-4 whitespace-nowrap">
                         {formatIsoDateToBR(item.date)}
                       </td>
@@ -347,11 +342,7 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                         {formatCentsToBRL(item.totalCents)}
                       </td>
                       <td className="py-3 pl-4 text-right">
-                        {isCanceled ? (
-                          <span className="text-xs text-slate-400 no-underline">
-                            Cancelado ({item.cancelReason})
-                          </span>
-                        ) : isEditing ? (
+                        {isEditing ? (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
@@ -432,6 +423,63 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                     </tr>
                   );
                 })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Seção 2: Local Isolado para Registros Cancelados */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Registros Cancelados</h3>
+            <p className="text-xs text-slate-500">
+              Histórico de lançamentos cancelados/estornados (não entram nos totais nem no
+              relatório).
+            </p>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            {canceledDeliveries.length}
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
+                <th className="py-2.5 pr-4">Data</th>
+                <th className="py-2.5 px-4">Tipo / Destino</th>
+                <th className="py-2.5 px-4 text-right">Qtd.</th>
+                <th className="py-2.5 px-4 text-right">Valor Original</th>
+                <th className="py-2.5 pl-4 text-right">Motivo do Cancelamento</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {canceledDeliveries.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-xs text-slate-400">
+                    Nenhum registro cancelado.
+                  </td>
+                </tr>
+              ) : (
+                canceledDeliveries.map((item) => (
+                  <tr key={item.id} className="text-slate-500">
+                    <td className="py-3 pr-4 whitespace-nowrap">{formatIsoDateToBR(item.date)}</td>
+                    <td className="py-3 px-4 font-medium text-slate-700">
+                      {getPlaceName(item.placeId)}
+                    </td>
+                    <td className="py-3 px-4 text-right line-through">{item.quantity}</td>
+                    <td className="py-3 px-4 text-right line-through">
+                      {formatCentsToBRL(item.totalCents)}
+                    </td>
+                    <td className="py-3 pl-4 text-right">
+                      <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        {item.cancelReason ?? 'Cancelado'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
