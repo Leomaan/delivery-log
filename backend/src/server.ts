@@ -1,6 +1,23 @@
+import { buildApp } from './app';
 import { env } from './config/env';
+import { logger } from './shared/lib/logger';
 
-// Phase 0 bootstrap placeholder. Fastify server initialization is added in Phase 1.
-console.info(
-  `[lunch-tracker] Environment validated (${env.NODE_ENV}) on ${env.HOST}:${String(env.PORT)}`,
-);
+async function start(): Promise<void> {
+  try {
+    const app = await buildApp();
+
+    await app.listen({
+      port: env.PORT,
+      host: env.HOST,
+    });
+
+    logger.info(
+      `[lunch-tracker] Server running in ${env.NODE_ENV} mode at http://${env.HOST}:${String(env.PORT)}`,
+    );
+  } catch (err) {
+    logger.fatal({ err }, 'Failed to start server');
+    process.exit(1);
+  }
+}
+
+void start();

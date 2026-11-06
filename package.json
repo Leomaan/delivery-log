@@ -9,13 +9,19 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
     ]
   },
   "scripts": {
     "dev": "pnpm --filter @lunch-tracker/backend dev",
     "build": "pnpm --filter @lunch-tracker/backend build",
     "start": "pnpm --filter @lunch-tracker/backend start",
+    "db:migrate": "pnpm --filter @lunch-tracker/backend db:migrate",
+    "db:seed": "pnpm --filter @lunch-tracker/backend db:seed",
+    "db:generate": "pnpm --filter @lunch-tracker/backend db:generate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",

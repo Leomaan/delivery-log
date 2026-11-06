@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseEnv } from './env';
+import { parseEnv } from '../../src/config/env';
 
 describe('parseEnv', () => {
   const validRawEnv: NodeJS.ProcessEnv = {
