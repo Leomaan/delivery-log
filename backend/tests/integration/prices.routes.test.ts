@@ -14,7 +14,7 @@ describe('Prices Routes Integration Tests', () => {
     repo = new InMemoryPricesRepository();
     repo.places.push({
       id: 1,
-      name: 'Obra Centro',
+      name: 'Prefeitura',
       active: true,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
     });
@@ -28,7 +28,7 @@ describe('Prices Routes Integration Tests', () => {
     }
   });
 
-  it('POST /api/v1/places/:id/prices and GET /api/v1/places/:id/prices/active work end-to-end', async () => {
+  it('POST /api/v1/places/:id/prices and GET /api/v1/places/:id/prices/active work end-to-end including same-day price updates', async () => {
     const server = await buildApp({ pricesService });
     app = server;
 
@@ -57,21 +57,17 @@ describe('Prices Routes Integration Tests', () => {
     });
     expect(create2.statusCode).toBe(201);
 
-    const overlapRes = await server.inject({
+    // Updating the price on the same start date (2026-02-01) succeeds without overlap error
+    const sameDayUpdate = await server.inject({
       method: 'POST',
       url: '/api/v1/places/1/prices',
       headers,
       payload: {
         unitCents: 2200,
-        validFrom: '2026-01-15',
-        validTo: '2026-01-20',
+        validFrom: '2026-02-01',
       },
     });
-    expect(overlapRes.statusCode).toBe(409);
-    expect(overlapRes.json()).toEqual({
-      code: 'CONFLICT',
-      message: 'Price validity interval overlaps with an existing price',
-    });
+    expect(sameDayUpdate.statusCode).toBe(201);
 
     const activeJan = await server.inject({
       method: 'GET',
@@ -87,6 +83,6 @@ describe('Prices Routes Integration Tests', () => {
       headers,
     });
     expect(activeFeb.statusCode).toBe(200);
-    expect(activeFeb.json<{ unitCents: number }>().unitCents).toBe(2000);
+    expect(activeFeb.json<{ unitCents: number }>().unitCents).toBe(2200);
   });
 });

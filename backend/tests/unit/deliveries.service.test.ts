@@ -31,10 +31,21 @@ export class InMemoryDeliveriesStore {
           .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime() || a.id - b.id);
       },
       createWithOptionalClose: async (input: CreatePriceRepoInput): Promise<Price> => {
-        if (input.closePriceUpdate) {
-          const target = this.prices.find((p) => p.id === input.closePriceUpdate?.id);
-          if (target) {
-            target.validTo = input.closePriceUpdate.validTo;
+        if (input.closePriceUpdates) {
+          for (const closeUpdate of input.closePriceUpdates) {
+            const target = this.prices.find((p) => p.id === closeUpdate.id);
+            if (target) {
+              target.validTo = closeUpdate.validTo;
+            }
+          }
+        }
+
+        if (input.updateSameDayPriceId !== undefined) {
+          const existing = this.prices.find((p) => p.id === input.updateSameDayPriceId);
+          if (existing) {
+            existing.unitCents = input.unitCents;
+            existing.validTo = input.validTo;
+            return existing;
           }
         }
 

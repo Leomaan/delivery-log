@@ -1,7 +1,7 @@
 import type { Price } from '@prisma/client';
 import { PricesRepository } from '../repositories/prices.repository';
 import type { CreatePriceInput } from '../schemas/prices.schema';
-import { ConflictError, NotFoundError, ValidationError } from '../shared/errors';
+import { NotFoundError, ValidationError } from '../shared/errors';
 import { addUtcDays, parseUtcDateOnly } from '../shared/lib/date';
 import { assertPositiveCents } from '../shared/lib/money';
 
@@ -23,7 +23,7 @@ export class PricesService {
     assertPositiveCents(input.unitCents, 'unitCents');
 
     const validFrom = parseUtcDateOnly(input.validFrom, 'validFrom');
-    const validTo =
+    let validTo =
       input.validTo !== undefined && input.validTo !== null
         ? parseUtcDateOnly(input.validTo, 'validTo')
         : null;
@@ -39,22 +39,34 @@ export class PricesService {
 
     const existingPrices = await this.pricesRepository.findAllByPlaceId(placeId);
 
-    let openPriceToClose: { id: number; validTo: Date } | undefined;
+    let updateSameDayPriceId: number | undefined;
+    const closePriceUpdates: Array<{ id: number; validTo: Date }> = [];
+
+    // If there is a future price starting after validFrom and validTo was not specified,
+    // automatically cap validTo at the day before the next future price starts.
+    const nextFuturePrice = existingPrices.find(
+      (p) => p.validFrom.getTime() > validFrom.getTime(),
+    );
+    if (nextFuturePrice && validTo === null) {
+      validTo = addUtcDays(nextFuturePrice.validFrom, -1);
+    }
 
     for (const existing of existingPrices) {
-      if (
-        existing.validTo === null &&
-        existing.validFrom.getTime() < validFrom.getTime()
-      ) {
-        openPriceToClose = {
-          id: existing.id,
-          validTo: addUtcDays(validFrom, -1),
-        };
+      // Same start date: update that price in-place so the user can change the value on the same day
+      if (existing.validFrom.getTime() === validFrom.getTime()) {
+        updateSameDayPriceId = existing.id;
         continue;
       }
 
-      if (intervalsOverlap(validFrom, validTo, existing.validFrom, existing.validTo)) {
-        throw new ConflictError('Price validity interval overlaps with an existing price');
+      // Previous price that is open or extends into the new validFrom: close it at validFrom - 1 day
+      if (
+        existing.validFrom.getTime() < validFrom.getTime() &&
+        intervalsOverlap(validFrom, validTo, existing.validFrom, existing.validTo)
+      ) {
+        closePriceUpdates.push({
+          id: existing.id,
+          validTo: addUtcDays(validFrom, -1),
+        });
       }
     }
 
@@ -63,7 +75,8 @@ export class PricesService {
       unitCents: input.unitCents,
       validFrom,
       validTo,
-      closePriceUpdate: openPriceToClose,
+      updateSameDayPriceId,
+      closePriceUpdates,
     });
   }
 
@@ -88,11 +101,13 @@ export class PricesService {
     const prices = await this.pricesRepository.findAllByPlaceId(placeId);
     const targetMs = targetDate.getTime();
 
-    const activePrice = prices.find((p) => {
+    const matchingPrices = prices.filter((p) => {
       const fromMs = p.validFrom.getTime();
       const toMs = p.validTo ? p.validTo.getTime() : Number.POSITIVE_INFINITY;
       return fromMs <= targetMs && targetMs <= toMs;
     });
+
+    const activePrice = matchingPrices[matchingPrices.length - 1];
 
     if (!activePrice) {
       throw new NotFoundError('No active price found for this place on the specified date');

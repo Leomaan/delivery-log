@@ -39,7 +39,7 @@ export class DeliveriesRepository {
           validFrom: { lte: params.date },
           OR: [{ validTo: null }, { validTo: { gte: params.date } }],
         },
-        orderBy: { validFrom: 'desc' },
+        orderBy: [{ validFrom: 'desc' }, { id: 'desc' }],
       });
 
       const { unitCents, totalCents } = params.resolvePriceAndCreate({

@@ -6,10 +6,11 @@ export interface CreatePriceRepoInput {
   unitCents: number;
   validFrom: Date;
   validTo: Date | null;
-  closePriceUpdate?: {
+  updateSameDayPriceId?: number;
+  closePriceUpdates?: Array<{
     id: number;
     validTo: Date;
-  };
+  }>;
 }
 
 export class PricesRepository {
@@ -30,10 +31,22 @@ export class PricesRepository {
 
   async createWithOptionalClose(input: CreatePriceRepoInput): Promise<Price> {
     return this.db.$transaction(async (tx) => {
-      if (input.closePriceUpdate) {
-        await tx.price.update({
-          where: { id: input.closePriceUpdate.id },
-          data: { validTo: input.closePriceUpdate.validTo },
+      if (input.closePriceUpdates && input.closePriceUpdates.length > 0) {
+        for (const closeUpdate of input.closePriceUpdates) {
+          await tx.price.update({
+            where: { id: closeUpdate.id },
+            data: { validTo: closeUpdate.validTo },
+          });
+        }
+      }
+
+      if (input.updateSameDayPriceId !== undefined) {
+        return tx.price.update({
+          where: { id: input.updateSameDayPriceId },
+          data: {
+            unitCents: input.unitCents,
+            validTo: input.validTo,
+          },
         });
       }
 

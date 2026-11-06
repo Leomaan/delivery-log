@@ -2,7 +2,7 @@ import type { Place, Price } from '@prisma/client';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { CreatePriceRepoInput, PricesRepository } from '../../src/repositories/prices.repository';
 import { PricesService } from '../../src/services/prices.service';
-import { ConflictError, NotFoundError, ValidationError } from '../../src/shared/errors';
+import { NotFoundError, ValidationError } from '../../src/shared/errors';
 import { formatUtcDateOnly } from '../../src/shared/lib/date';
 
 export class InMemoryPricesRepository implements Pick<
@@ -24,10 +24,21 @@ export class InMemoryPricesRepository implements Pick<
   }
 
   async createWithOptionalClose(input: CreatePriceRepoInput): Promise<Price> {
-    if (input.closePriceUpdate) {
-      const target = this.prices.find((p) => p.id === input.closePriceUpdate?.id);
-      if (target) {
-        target.validTo = input.closePriceUpdate.validTo;
+    if (input.closePriceUpdates) {
+      for (const closeUpdate of input.closePriceUpdates) {
+        const target = this.prices.find((p) => p.id === closeUpdate.id);
+        if (target) {
+          target.validTo = closeUpdate.validTo;
+        }
+      }
+    }
+
+    if (input.updateSameDayPriceId !== undefined) {
+      const existing = this.prices.find((p) => p.id === input.updateSameDayPriceId);
+      if (existing) {
+        existing.unitCents = input.unitCents;
+        existing.validTo = input.validTo;
+        return existing;
       }
     }
 
@@ -52,7 +63,7 @@ describe('PricesService Unit Tests', () => {
     repo = new InMemoryPricesRepository();
     repo.places.push({
       id: 1,
-      name: 'Obra Centro',
+      name: 'Prefeitura',
       active: true,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
     });
@@ -83,48 +94,37 @@ describe('PricesService Unit Tests', () => {
     expect(second.validTo).toBeNull();
   });
 
-  it('rejects overlapping price intervals (same start date, inside closed range, or before open price)', async () => {
+  it('allows changing the price on the same start date or inserting an intermediate date without overlap error', async () => {
     await pricesService.createPrice(1, {
       unitCents: 1800,
-      validFrom: '2026-01-10',
-      validTo: '2026-01-20',
+      validFrom: '2026-01-01',
     });
 
-    await expect(
-      pricesService.createPrice(1, {
-        unitCents: 1900,
-        validFrom: '2026-01-20',
-        validTo: '2026-01-30',
-      }),
-    ).rejects.toThrow(ConflictError);
+    // Updating the price on the exact same day (2026-01-01) updates it in-place
+    const updatedSameDay = await pricesService.createPrice(1, {
+      unitCents: 1900,
+      validFrom: '2026-01-01',
+    });
+    expect(updatedSameDay.unitCents).toBe(1900);
 
-    await expect(
-      pricesService.createPrice(1, {
-        unitCents: 1900,
-        validFrom: '2026-01-12',
-        validTo: '2026-01-15',
-      }),
-    ).rejects.toThrow(ConflictError);
-
-    await expect(
-      pricesService.createPrice(1, {
-        unitCents: 1900,
-        validFrom: '2026-01-01',
-        validTo: '2026-01-25',
-      }),
-    ).rejects.toThrow(ConflictError);
-
+    // Adding a price in February (2026-02-01)
     await pricesService.createPrice(1, {
-      unitCents: 2000,
+      unitCents: 2100,
       validFrom: '2026-02-01',
     });
 
-    await expect(
-      pricesService.createPrice(1, {
-        unitCents: 2100,
-        validFrom: '2026-02-01',
-      }),
-    ).rejects.toThrow(ConflictError);
+    // Inserting an intermediate price on 2026-01-15 automatically closes 2026-01-01 at 2026-01-14
+    // and caps the 2026-01-15 price at 2026-01-31!
+    const midJan = await pricesService.createPrice(1, {
+      unitCents: 2000,
+      validFrom: '2026-01-15',
+    });
+
+    expect(midJan.unitCents).toBe(2000);
+    expect(midJan.validTo).not.toBeNull();
+    if (midJan.validTo) {
+      expect(formatUtcDateOnly(midJan.validTo)).toBe('2026-01-31');
+    }
   });
 
   it('returns the exact active price on every validity boundary and throws NotFoundError on gaps', async () => {
