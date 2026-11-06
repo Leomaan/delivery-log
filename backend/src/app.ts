@@ -13,6 +13,7 @@ import { errorHandler, NotFoundError } from './shared/errors';
 import { generateRequestId, getLoggerOptions } from './shared/lib/logger';
 import { registerAuthPlugins } from './shared/plugins/auth';
 import { registerSecurityPlugins } from './shared/plugins/security';
+import { registerDocsPlugins } from './shared/plugins/swagger';
 
 export interface BuildAppOptions {
   authService?: AuthService;
@@ -35,6 +36,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   await registerSecurityPlugins(app);
   await registerAuthPlugins(app);
+  await registerDocsPlugins(app);
 
   app.setErrorHandler(errorHandler);
 

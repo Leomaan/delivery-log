@@ -292,15 +292,15 @@ model Payment {
 
 ### Fase 7 — CI/CD e endurecimento
 
-- [ ] GitHub Actions: lint → typecheck → testes → build
-- [ ] Dockerfile de produção (multi-stage, usuário não-root)
-- [ ] Auditoria de dependências (`npm audit`)
-- [ ] Documentação da API (OpenAPI via `@fastify/swagger`)
-- [ ] Backup do banco documentado
+- [x] GitHub Actions: lint → typecheck → testes → build
+- [x] Dockerfile de produção (multi-stage, usuário não-root)
+- [x] Auditoria de dependências (`npm audit` / `pnpm audit`)
+- [x] Documentação da API (OpenAPI via `@fastify/swagger`)
+- [x] Backup do banco documentado
 
 **Aceite:** pipeline verde em PR; imagem de produção sobe e responde `/health`.
 
-### Fase 9 — Frontend
+### Fase 8 — Frontend
 
 - [ ] Setup React + TypeScript + Tailwind
 - [ ] Login e gerenciamento de sessão

@@ -73,5 +73,28 @@ lunch-tracker/
 | `pnpm db:seed`     | Popula o banco com dados iniciais de desenvolvimento      |
 | `pnpm lint`        | Executa o ESLint em todo o repositório                    |
 | `pnpm format`    | Formata os arquivos com Prettier                          |
-| `pnpm typecheck` | Verifica a tipagem estrita do TypeScript (`tsc --noEmit`) |
-| `pnpm test`      | Executa a suíte de testes com Vitest                      |
+| `pnpm typecheck`   | Verifica a tipagem estrita do TypeScript (`tsc --noEmit`) |
+| `pnpm test`        | Executa a suíte de testes com Vitest                      |
+
+## Documentação da API (OpenAPI / Swagger)
+
+Com o servidor em execução, acesse a documentação interativa OpenAPI em:
+
+- **Swagger UI:** `http://localhost:3333/docs`
+- **Especificação JSON:** `http://localhost:3333/docs/json`
+
+## Backup e Restauração do Banco de Dados (PostgreSQL)
+
+Para gerar um backup completo do banco de dados em container Docker:
+
+```bash
+docker exec -t lunch-tracker-db pg_dump -U postgres -d lunch_tracker -F c -f /tmp/lunch_tracker.backup
+docker cp lunch-tracker-db:/tmp/lunch_tracker.backup ./lunch_tracker_$(date +%F).backup
+```
+
+Para restaurar um backup:
+
+```bash
+docker cp ./lunch_tracker_YYYY-MM-DD.backup lunch-tracker-db:/tmp/restore.backup
+docker exec -t lunch-tracker-db pg_restore -U postgres -d lunch_tracker --clean --if-exists /tmp/restore.backup
+```

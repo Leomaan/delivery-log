@@ -177,4 +177,18 @@ describe('App Core & Phase 1 Integration Tests', () => {
       message: 'An unexpected error occurred',
     });
   });
+
+  it('serves OpenAPI specification at GET /docs/json', async () => {
+    app = await buildApp();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/docs/json',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const spec = response.json<{ openapi: string; info: { title: string } }>();
+    expect(spec.openapi).toMatch(/^3\./);
+    expect(spec.info.title).toContain('Lunch Tracker API');
+  });
 });
