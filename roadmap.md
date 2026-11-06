@@ -302,14 +302,14 @@ model Payment {
 
 ### Fase 8 — Frontend
 
-- [ ] Setup React + TypeScript + Tailwind
-- [ ] Login e gerenciamento de sessão
-- [ ] Tela de lançamento rápido (local, quantidade, salvar)
-- [ ] Tela de pagamentos
-- [ ] Tela de relatório com filtros de local e período
-- [ ] Considerar PWA para uso no celular
+- [x] Setup React + TypeScript + Tailwind (Design minimalista branco com detalhes em azul)
+- [x] Login e gerenciamento de sessão
+- [x] Tela de lançamento rápido (tipo/local, data, quantidade, salvar com valor congelado)
+- [x] Tela de cadastro de tipos e reajuste de preços por vigência
+- [x] Tela de relatório de conferência com filtros de tipo e período
+- [x] Manifesto Web App (PWA) para uso prático no celular
 
-**Aceite:** fluxo completo de registrar entrega, registrar pagamento e consultar saldo funcionando de ponta a ponta.
+**Aceite:** fluxo completo de registrar entrega, reajustar preço e consultar valor esperado funcionando de ponta a ponta.
 
 ---
 

@@ -1,0 +1,9 @@
+{
+  "name": "Controle de Quentinhas",
+  "short_name": "Ponto 10",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "description": "Organizador de entregas de quentinhas e conferência de valores esperados."
+}

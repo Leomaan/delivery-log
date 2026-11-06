@@ -24,6 +24,14 @@ lunch-tracker/
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
+├── frontend/             # Interface Web Minimalista (React + TypeScript + Tailwind CSS)
+│   ├── src/
+│   │   ├── components/   # Telas de Lançamentos, Relatório de Conferência, Tipos/Preços e Login
+│   │   ├── lib/          # Cliente HTTP e formatação monetária BRL
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── tests/            # Testes unitários do frontend
+│   └── package.json
 ├── docker-compose.yml    # PostgreSQL 16 + App container
 ├── eslint.config.mjs     # Configuração global do ESLint (Flat Config)
 ├── pnpm-workspace.yaml   # Definição dos workspaces
@@ -65,8 +73,9 @@ lunch-tracker/
 
 | Comando          | Descrição                                                 |
 | ---------------- | --------------------------------------------------------- |
-| `pnpm dev`       | Inicia o backend em modo watch (`tsx`)                    |
-| `pnpm build`     | Compila o TypeScript para JavaScript em `backend/dist`    |
+| `pnpm dev`          | Inicia o backend em modo watch (`tsx`)                    |
+| `pnpm dev:frontend` | Inicia o frontend React + Vite em `http://localhost:5173` |
+| `pnpm build`        | Compila backend e frontend para produção                  |
 | `pnpm start`       | Executa a versão compilada de produção                    |
 | `pnpm db:generate` | Gera o Prisma Client a partir do `schema.prisma`          |
 | `pnpm db:migrate`  | Executa as migrations do banco de dados (`migrate dev`)   |
