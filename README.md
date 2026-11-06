@@ -9,9 +9,18 @@ O projeto utiliza um **Monorepo Leve com `pnpm workspaces`**:
 ```text
 lunch-tracker/
 ├── backend/              # API Node.js + TypeScript + Fastify + Prisma
+│   ├── prisma/           # Schema Prisma, migrations SQL (com CHECK constraints) e seed
 │   ├── src/
 │   │   ├── config/       # Validação de variáveis de ambiente (Zod)
-│   │   └── server.ts     # Ponto de entrada do servidor
+│   │   ├── controllers/  # Camada HTTP (extrai dados da requisição e envia resposta)
+│   │   ├── services/     # Regra de negócio, validações de domínio e orquestração
+│   │   ├── repositories/ # Camada de acesso a dados (queries Prisma)
+│   │   ├── routes/       # Declaração de endpoints Fastify e hooks de autenticação
+│   │   ├── schemas/      # Schemas de validação de entrada com Zod
+│   │   ├── shared/       # Erros padronizados, plugins, Prisma client, money, date e logger
+│   │   ├── app.ts        # Instância do Fastify (sem listen, pronta para testes)
+│   │   └── server.ts     # Ponto de entrada HTTP do servidor
+│   ├── tests/            # Testes separados do código-fonte (unit/ e integration/)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
@@ -58,8 +67,11 @@ lunch-tracker/
 | ---------------- | --------------------------------------------------------- |
 | `pnpm dev`       | Inicia o backend em modo watch (`tsx`)                    |
 | `pnpm build`     | Compila o TypeScript para JavaScript em `backend/dist`    |
-| `pnpm start`     | Executa a versão compilada de produção                    |
-| `pnpm lint`      | Executa o ESLint em todo o repositório                    |
+| `pnpm start`       | Executa a versão compilada de produção                    |
+| `pnpm db:generate` | Gera o Prisma Client a partir do `schema.prisma`          |
+| `pnpm db:migrate`  | Executa as migrations do banco de dados (`migrate dev`)   |
+| `pnpm db:seed`     | Popula o banco com dados iniciais de desenvolvimento      |
+| `pnpm lint`        | Executa o ESLint em todo o repositório                    |
 | `pnpm format`    | Formata os arquivos com Prettier                          |
 | `pnpm typecheck` | Verifica a tipagem estrita do TypeScript (`tsc --noEmit`) |
 | `pnpm test`      | Executa a suíte de testes com Vitest                      |

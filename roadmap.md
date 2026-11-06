@@ -117,28 +117,26 @@ lunch-tracker/
 │   │   └── seed.ts
 │   ├── src/
 │   │   ├── config/env.ts
-│   │   ├── modules/
-│   │   │   ├── auth/
-│   │   │   ├── users/
-│   │   │   ├── places/
-│   │   │   ├── prices/
-│   │   │   ├── deliveries/
-│   │   │   ├── payments/
-│   │   │   └── reports/
-│   │   │       ├── <module>.routes.ts
-│   │   │       ├── <module>.controller.ts
-│   │   │       ├── <module>.service.ts
-│   │   │       ├── <module>.repository.ts
-│   │   │       ├── <module>.schema.ts
-│   │   │       └── <module>.test.ts
+│   │   ├── controllers/
+│   │   │   └── <module>.controller.ts
+│   │   ├── services/
+│   │   │   └── <module>.service.ts
+│   │   ├── repositories/
+│   │   │   └── <module>.repository.ts
+│   │   ├── routes/
+│   │   │   └── <module>.routes.ts
+│   │   ├── schemas/
+│   │   │   └── <module>.schema.ts
 │   │   ├── shared/
 │   │   │   ├── errors/
 │   │   │   ├── plugins/
-│   │   │   ├── lib/ (prisma.ts, logger.ts, money.ts)
+│   │   │   ├── lib/ (prisma.ts, logger.ts, money.ts, date.ts)
 │   │   │   └── types/
 │   │   ├── app.ts
 │   │   └── server.ts
-│   ├── tests/ (unit/, integration/)
+│   ├── tests/
+│   │   ├── unit/
+│   │   └── integration/
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── docker-compose.yml
@@ -224,12 +222,12 @@ model Payment {
 
 **Objetivo:** servidor base com segurança e tratamento de erros.
 
-- [ ] `app.ts` / `server.ts` separados
-- [ ] Logger pino com `requestId`
-- [ ] Hierarquia de erros (`AppError`, `NotFoundError`, `ConflictError`, `ValidationError`) + `errorHandler` global
-- [ ] Plugins: helmet, cors (origem explícita), rate-limit
-- [ ] Rota `/health`
-- [ ] Prefixo `/api/v1`
+- [x] `app.ts` / `server.ts` separados
+- [x] Logger pino com `requestId`
+- [x] Hierarquia de erros (`AppError`, `NotFoundError`, `ConflictError`, `ValidationError`) + `errorHandler` global
+- [x] Plugins: helmet, cors (origem explícita), rate-limit
+- [x] Rota `/health`
+- [x] Prefixo `/api/v1`
 
 **Aceite:** teste de integração de `/health`; erro lançado em rota retorna JSON padronizado; headers de segurança presentes.
 
@@ -237,11 +235,11 @@ model Payment {
 
 **Objetivo:** schema versionado e acessível.
 
-- [ ] `schema.prisma` conforme seção 4
-- [ ] Primeira migration + constraints `CHECK` (via SQL na migration)
-- [ ] `shared/lib/prisma.ts` (client único)
-- [ ] `seed.ts` com dados de desenvolvimento
-- [ ] Banco de teste isolado para integração
+- [x] `schema.prisma` conforme seção 4
+- [x] Primeira migration + constraints `CHECK` (via SQL na migration)
+- [x] `shared/lib/prisma.ts` (client único)
+- [x] `seed.ts` com dados de desenvolvimento
+- [x] Banco de teste isolado para integração
 
 **Aceite:** `prisma migrate dev` e seed funcionam; inserir `quantity <= 0` é rejeitado pelo banco.
 
@@ -249,23 +247,23 @@ model Payment {
 
 **Objetivo:** API protegida.
 
-- [ ] Models `User` e `RefreshToken` (hash do token armazenado)
-- [ ] `POST /auth/login`, `/auth/refresh`, `/auth/logout`
-- [ ] JWT de acesso (10–15 min) + refresh em cookie `httpOnly`, `secure`, `sameSite`
-- [ ] Hook de autenticação e autorização por papel (`ADMIN`, `OPERATOR`)
-- [ ] Rate-limit mais restrito no login
-- [ ] Adicionar `createdBy` em `Delivery` e `Payment`
+- [x] Models `User` e `RefreshToken` (hash do token armazenado)
+- [x] `POST /auth/login`, `/auth/refresh`, `/auth/logout`
+- [x] JWT de acesso (10–15 min) + refresh em cookie `httpOnly`, `secure`, `sameSite`
+- [x] Hook de autenticação (`authenticate` para modelo de função única/uso individual)
+- [x] Rate-limit mais restrito no login
+- [x] Adicionar `createdBy` em `Delivery` e `Payment`
 
-**Aceite:** rotas protegidas retornam 401 sem token e 403 sem papel; refresh revogado não funciona; testes de auth passando.
+**Aceite:** rotas protegidas retornam 401 sem token; refresh revogado não funciona; testes de auth passando.
 
 ### Fase 4 — Places e Prices
 
 **Objetivo:** módulo-modelo que os demais seguirão.
 
-- [ ] CRUD de `places` (desativar em vez de excluir)
-- [ ] `POST /places/:id/prices`: fecha o preço anterior (`validTo = validFrom − 1 dia`) sem sobreposição
-- [ ] Função de busca do preço vigente por local e data
-- [ ] Testes unitários do service (incluindo sobreposição e lacunas)
+- [x] CRUD de `places` (desativar em vez de excluir)
+- [x] `POST /places/:id/prices`: fecha o preço anterior (`validTo = validFrom − 1 dia`) sem sobreposição
+- [x] Função de busca do preço vigente por local e data
+- [x] Testes unitários do service (incluindo sobreposição e lacunas)
 
 **Aceite:** impossível cadastrar preços sobrepostos; busca por data retorna o preço correto em cada borda de vigência.
 
@@ -273,38 +271,26 @@ model Payment {
 
 **Objetivo:** registrar entregas com preço congelado.
 
-- [ ] `POST /deliveries`: busca preço vigente, grava `unitCents` e `totalCents = quantity * unitCents` em transação
-- [ ] Erro claro se não houver preço vigente na data
-- [ ] `GET /deliveries` com filtros `placeId`, `from`, `to` e paginação
-- [ ] `POST /deliveries/:id/cancel` (motivo obrigatório), sem exclusão física
-- [ ] Testes: reajuste de preço não altera entregas antigas
+- [x] `POST /deliveries`: busca preço vigente, grava `unitCents` e `totalCents = quantity * unitCents` em transação
+- [x] Erro claro se não houver preço vigente na data
+- [x] `GET /deliveries` com filtros `placeId`, `from`, `to` e paginação
+- [x] `POST /deliveries/:id/cancel` (motivo obrigatório), sem exclusão física
+- [x] Testes: reajuste de preço não altera entregas antigas
 
 **Aceite:** alterar o preço do local não muda `totalCents` de entregas já registradas; entrega cancelada não entra nos totais.
 
-### Fase 6 — Payments
+### Fase 6 — Reports (Conferência de Valores Esperados)
 
-**Objetivo:** registrar valores recebidos.
+**Objetivo:** organizar lançamentos por tipo/destino (ex.: Prefeitura, Saúde, Fórum) e responder com exatidão "quanto entregou e qual o valor esperado a receber em cada período", respeitando os preços congelados em cada momento.
 
-- [ ] `POST /payments`, `GET /payments` (filtros e paginação)
-- [ ] `POST /payments/:id/cancel` com motivo
-- [ ] Testes de validação e cancelamento
+- [x] `GET /reports/summary` por local/tipo e período: `totalQuantity`, `expectedAmountCents`, detalhamento por local (`byPlace` com histórico de faixas `rates`) e por período (`byPeriod`)
+- [x] Agrupamento por dia (`day`), semana (`week`) ou mês (`month`)
+- [x] Ignorar registros cancelados
+- [x] Testes com cenários numéricos conhecidos (valores esperados calculados à mão)
 
-**Aceite:** pagamento cancelado não entra nos totais; valores sempre em centavos.
+**Aceite:** soma dos relatórios bate exatamente com a soma dos registros individuais (mesmo após alterações de preço), sem diferença de centavos.
 
-> Se a decisão pendente de cobrança exigir vínculo entre pagamento e entregas, tratar como fase extra após decisão do responsável.
-
-### Fase 7 — Reports
-
-**Objetivo:** responder "quanto entregou, quanto recebeu, quanto falta".
-
-- [ ] `GET /reports/summary` por local e período: `totalQuantity`, `totalDeliveredCents`, `totalReceivedCents`, `balanceCents`
-- [ ] Agrupamento por dia, semana ou mês
-- [ ] Ignorar registros cancelados
-- [ ] Testes com cenários numéricos conhecidos (valores esperados calculados à mão)
-
-**Aceite:** soma dos relatórios bate exatamente com a soma dos registros individuais, sem diferença de centavos.
-
-### Fase 8 — CI/CD e endurecimento
+### Fase 7 — CI/CD e endurecimento
 
 - [ ] GitHub Actions: lint → typecheck → testes → build
 - [ ] Dockerfile de produção (multi-stage, usuário não-root)
@@ -344,3 +330,6 @@ model Payment {
 | Data       | Decisão                                                                                                                                                                             | Responsável |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | 2026-11-05 | Adotar Monorepo Leve com `pnpm workspaces` na raiz (gerenciando ESLint, Prettier, Husky, lint-staged e `tsconfig.base.json`) e criar diretórios de módulos sob demanda a cada fase. | Responsável |
+| 2026-11-06 | Adotar modelo de função única (uso individual sem múltiplos papéis `ADMIN`/`OPERATOR`) nesta etapa, mantendo autenticação completa (`User`, `RefreshToken`, `createdBy`).           | Responsável |
+| 2026-11-06 | Organizar o código por camada na raiz de `src/` (`controllers/`, `services/`, `repositories/`, `routes/`, `schemas/`) e manter todos os testes separados em `tests/unit/` e `tests/integration/`. | Responsável |
+| 2026-11-06 | Remover módulo `Payments` e focar o sistema como organizador e conferência de valores esperados por tipo de quentinha (ex.: Prefeitura, Saúde, Fórum), com histórico de preços por data congelado em cada entrega. | Responsável |
