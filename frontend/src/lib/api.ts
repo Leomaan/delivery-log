@@ -239,6 +239,13 @@ class ApiClient {
     return this.request<PaginatedDeliveries>(`/deliveries?${search.toString()}`);
   }
 
+  public async updateDelivery(id: number, quantity: number): Promise<Delivery> {
+    return this.request<Delivery>(`/deliveries/${String(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity }),
+    });
+  }
+
   public async cancelDelivery(id: number, reason: string): Promise<Delivery> {
     return this.request<Delivery>(`/deliveries/${String(id)}/cancel`, {
       method: 'POST',

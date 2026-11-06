@@ -4,6 +4,7 @@ import type {
   CancelDeliveryInput,
   CreateDeliveryInput,
   ListDeliveriesQuery,
+  UpdateDeliveryInput,
 } from '../schemas/deliveries.schema';
 import { ConflictError, NotFoundError, ValidationError } from '../shared/errors';
 import { parseUtcDateOnly } from '../shared/lib/date';
@@ -89,6 +90,25 @@ export class DeliveriesService {
       totalQuantity,
       totalDeliveredCents,
     };
+  }
+
+  async updateDelivery(id: number, input: UpdateDeliveryInput): Promise<Delivery> {
+    if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
+      throw new ValidationError('quantity must be a positive integer');
+    }
+
+    const existing = await this.deliveriesRepository.findById(id);
+
+    if (!existing) {
+      throw new NotFoundError('Delivery not found');
+    }
+
+    if (existing.canceledAt !== null) {
+      throw new ConflictError('Cannot edit a canceled delivery');
+    }
+
+    const totalCents = calculateDeliveryTotalCents(input.quantity, existing.unitCents);
+    return this.deliveriesRepository.updateQuantity(id, input.quantity, totalCents);
   }
 
   async cancelDelivery(id: number, input: CancelDeliveryInput): Promise<Delivery> {

@@ -53,7 +53,7 @@ export class InMemoryDeliveriesStore {
 
   public asDeliveriesRepository(): Pick<
     DeliveriesRepository,
-    'createWithFrozenPrice' | 'findById' | 'findManyAndCount' | 'cancel'
+    'createWithFrozenPrice' | 'findById' | 'findManyAndCount' | 'updateQuantity' | 'cancel'
   > {
     return {
       createWithFrozenPrice: async (params: CreateDeliveryInTxParams): Promise<Delivery> => {
@@ -113,6 +113,20 @@ export class InMemoryDeliveriesStore {
         const items = sorted.slice(params.skip, params.skip + params.take);
 
         return { items, total: filtered.length };
+      },
+
+      updateQuantity: async (
+        id: number,
+        quantity: number,
+        totalCents: number,
+      ): Promise<Delivery> => {
+        const delivery = this.deliveries.find((d) => d.id === id);
+        if (!delivery) {
+          throw new NotFoundError('Delivery not found');
+        }
+        delivery.quantity = quantity;
+        delivery.totalCents = totalCents;
+        return delivery;
       },
 
       cancel: async (id: number, reason: string, canceledAt: Date): Promise<Delivery> => {
@@ -285,5 +299,32 @@ describe('DeliveriesService Unit Tests', () => {
     expect(allList.total).toBe(2);
     expect(allList.totalQuantity).toBe(8);
     expect(allList.totalDeliveredCents).toBe(16000);
+  });
+
+  it('updates delivery quantity preserving the original frozen unitCents even after price changes', async () => {
+    await pricesService.createPrice(1, {
+      unitCents: 1800,
+      validFrom: '2026-01-01',
+    });
+
+    const janDelivery = await deliveriesService.createDelivery(1, {
+      placeId: 1,
+      date: '2026-01-10',
+      quantity: 10,
+    });
+
+    // Price increases in February to 2200
+    await pricesService.createPrice(1, {
+      unitCents: 2200,
+      validFrom: '2026-02-01',
+    });
+
+    const updated = await deliveriesService.updateDelivery(janDelivery.id, {
+      quantity: 15,
+    });
+
+    expect(updated.quantity).toBe(15);
+    expect(updated.unitCents).toBe(1800);
+    expect(updated.totalCents).toBe(27000);
   });
 });

@@ -95,6 +95,16 @@ export class DeliveriesRepository {
     return { items, total };
   }
 
+  async updateQuantity(id: number, quantity: number, totalCents: number): Promise<Delivery> {
+    return this.db.delivery.update({
+      where: { id },
+      data: {
+        quantity,
+        totalCents,
+      },
+    });
+  }
+
   async cancel(id: number, reason: string, canceledAt: Date): Promise<Delivery> {
     return this.db.delivery.update({
       where: { id },

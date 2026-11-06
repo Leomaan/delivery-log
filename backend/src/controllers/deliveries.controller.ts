@@ -4,6 +4,7 @@ import {
   createDeliverySchema,
   deliveryIdParamSchema,
   listDeliveriesQuerySchema,
+  updateDeliverySchema,
 } from '../schemas/deliveries.schema';
 import { DeliveriesService } from '../services/deliveries.service';
 
@@ -20,6 +21,13 @@ export class DeliveriesController {
     const query = listDeliveriesQuerySchema.parse(request.query);
     const result = await this.deliveriesService.listDeliveries(query);
     await reply.status(200).send(result);
+  };
+
+  update = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    const { id } = deliveryIdParamSchema.parse(request.params);
+    const input = updateDeliverySchema.parse(request.body);
+    const delivery = await this.deliveriesService.updateDelivery(id, input);
+    await reply.status(200).send(delivery);
   };
 
   cancel = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {

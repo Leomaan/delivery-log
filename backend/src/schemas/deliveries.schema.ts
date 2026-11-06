@@ -26,10 +26,15 @@ export const listDeliveriesQuerySchema = z.object({
     .default('false'),
 });
 
+export const updateDeliverySchema = z.object({
+  quantity: z.number().int().positive('quantity must be a positive integer'),
+});
+
 export const cancelDeliverySchema = z.object({
   reason: z.string().trim().min(3, 'Cancel reason must have at least 3 characters').max(255),
 });
 
 export type CreateDeliveryInput = z.infer<typeof createDeliverySchema>;
+export type UpdateDeliveryInput = z.infer<typeof updateDeliverySchema>;
 export type ListDeliveriesQuery = z.infer<typeof listDeliveriesQuerySchema>;
 export type CancelDeliveryInput = z.infer<typeof cancelDeliverySchema>;

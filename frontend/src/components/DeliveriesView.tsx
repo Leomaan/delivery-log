@@ -1,7 +1,15 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, CheckCircle2, Plus } from 'lucide-react';
+import { Ban, CheckCircle2, Pencil, Plus } from 'lucide-react';
 import { api, type Delivery, type Place } from '../lib/api';
 import { formatCentsToBRL, formatIsoDateToBR, getTodayIsoDate } from '../lib/money';
+
+const CANCEL_REASONS = [
+  'Confusão no lançamento',
+  'Reembolso / Estorno',
+  'Quantidade incorreta',
+  'Tipo/Destino incorreto',
+  'Pedido cancelado',
+] as const;
 
 interface DeliveriesViewProps {
   places: Place[];
@@ -25,8 +33,14 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(
     null,
   );
+
+  // Estado de Edição de quantidade
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editQuantity, setEditQuantity] = useState<string>('1');
+
+  // Estado de Cancelamento com Dropdown de motivos
   const [cancelingId, setCancelingId] = useState<number | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
+  const [cancelReason, setCancelReason] = useState<string>(CANCEL_REASONS[0]);
 
   useEffect(() => {
     if (selectedPlaceId === 0 && activePlaces[0]) {
@@ -95,12 +109,32 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
     }
   };
 
+  const handleConfirmEdit = async (id: number) => {
+    const newQty = Number.parseInt(editQuantity, 10);
+    if (!Number.isInteger(newQty) || newQty <= 0) return;
+
+    try {
+      await api.updateDelivery(id, newQty);
+      setEditingId(null);
+      setFeedback({
+        type: 'success',
+        text: 'Quantidade atualizada (mantendo o valor unitário congelado original).',
+      });
+      await loadDeliveries();
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Erro ao editar registro',
+      });
+    }
+  };
+
   const handleConfirmCancel = async (id: number) => {
     if (cancelReason.trim().length < 3) return;
     try {
       await api.cancelDelivery(id, cancelReason.trim());
       setCancelingId(null);
-      setCancelReason('');
+      setCancelReason(CANCEL_REASONS[0]);
       await loadDeliveries();
     } catch (err) {
       setFeedback({
@@ -226,7 +260,7 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
           <div>
             <h3 className="text-base font-semibold text-slate-900">Registros Lançados</h3>
             <p className="text-xs text-slate-500">
-              Total listado ({ String(totalQuantity) } quentinhas):{' '}
+              Total listado ({String(totalQuantity)} quentinhas):{' '}
               <strong className="text-blue-600">{formatCentsToBRL(totalDeliveredCents)}</strong>
             </p>
           </div>
@@ -266,7 +300,7 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                 <th className="py-2.5 px-4 text-right">Qtd.</th>
                 <th className="py-2.5 px-4 text-right">Unitário (Congelado)</th>
                 <th className="py-2.5 px-4 text-right">Total</th>
-                <th className="py-2.5 pl-4 text-right">Ação</th>
+                <th className="py-2.5 pl-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -279,6 +313,9 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
               ) : (
                 deliveries.map((item) => {
                   const isCanceled = item.canceledAt !== null;
+                  const isEditing = editingId === item.id;
+                  const isCanceling = cancelingId === item.id;
+
                   return (
                     <tr
                       key={item.id}
@@ -290,7 +327,19 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                       <td className="py-3 px-4 font-medium text-slate-900">
                         {getPlaceName(item.placeId)}
                       </td>
-                      <td className="py-3 px-4 text-right">{item.quantity}</td>
+                      <td className="py-3 px-4 text-right">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            min={1}
+                            value={editQuantity}
+                            onChange={(e) => setEditQuantity(e.target.value)}
+                            className="w-20 rounded-lg border border-blue-600 px-2 py-1 text-right text-xs text-slate-900 focus:outline-none"
+                          />
+                        ) : (
+                          item.quantity
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-right text-slate-600">
                         {formatCentsToBRL(item.unitCents)}
                       </td>
@@ -302,42 +351,82 @@ export function DeliveriesView({ places }: DeliveriesViewProps) {
                           <span className="text-xs text-slate-400 no-underline">
                             Cancelado ({item.cancelReason})
                           </span>
-                        ) : cancelingId === item.id ? (
+                        ) : isEditing ? (
                           <div className="flex items-center justify-end gap-1.5">
-                            <input
-                              type="text"
-                              placeholder="Motivo..."
+                            <button
+                              type="button"
+                              onClick={() => void handleConfirmEdit(item.id)}
+                              className="rounded-lg bg-blue-600 hover:bg-blue-700 px-2.5 py-1 text-xs font-medium text-white cursor-pointer"
+                            >
+                              Salvar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                              className="rounded-lg border border-slate-200 hover:bg-slate-50 px-2 py-1 text-xs text-slate-600 cursor-pointer"
+                            >
+                              Voltar
+                            </button>
+                          </div>
+                        ) : isCanceling ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <select
                               value={cancelReason}
                               onChange={(e) => setCancelReason(e.target.value)}
-                              className="w-36 rounded border border-slate-300 px-2 py-1 text-xs"
-                            />
+                              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 focus:border-blue-600 focus:outline-none"
+                            >
+                              {CANCEL_REASONS.map((reason) => (
+                                <option key={reason} value={reason}>
+                                  {reason}
+                                </option>
+                              ))}
+                            </select>
                             <button
                               type="button"
                               onClick={() => void handleConfirmCancel(item.id)}
-                              className="rounded bg-blue-600 px-2 py-1 text-xs text-white cursor-pointer"
+                              className="rounded-lg bg-blue-600 hover:bg-blue-700 px-2.5 py-1 text-xs font-medium text-white cursor-pointer"
                             >
-                              OK
+                              Confirmar
                             </button>
                             <button
                               type="button"
                               onClick={() => {
                                 setCancelingId(null);
-                                setCancelReason('');
+                                setCancelReason(CANCEL_REASONS[0]);
                               }}
-                              className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 cursor-pointer"
+                              className="rounded-lg border border-slate-200 hover:bg-slate-50 px-2 py-1 text-xs text-slate-600 cursor-pointer"
                             >
-                              X
+                              Voltar
                             </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => setCancelingId(item.id)}
-                            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
-                          >
-                            <Ban className="w-3.5 h-3.5" />
-                            <span>Cancelar</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCancelingId(null);
+                                setEditingId(item.id);
+                                setEditQuantity(String(item.quantity));
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              <span>Editar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setCancelingId(item.id);
+                                setCancelReason(CANCEL_REASONS[0]);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              <span>Cancelar</span>
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
