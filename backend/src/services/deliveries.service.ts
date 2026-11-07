@@ -1,12 +1,11 @@
 import type { Delivery } from '@prisma/client';
 import { DeliveriesRepository } from '../repositories/deliveries.repository';
 import type {
-  CancelDeliveryInput,
   CreateDeliveryInput,
   ListDeliveriesQuery,
   UpdateDeliveryInput,
 } from '../schemas/deliveries.schema';
-import { ConflictError, NotFoundError, ValidationError } from '../shared/errors';
+import { NotFoundError, ValidationError } from '../shared/errors';
 import { parseUtcDateOnly } from '../shared/lib/date';
 import { calculateDeliveryTotalCents } from '../shared/lib/money';
 
@@ -69,18 +68,14 @@ export class DeliveriesService {
 
     const skip = (query.page - 1) * query.limit;
 
-    const { items, total } = await this.deliveriesRepository.findManyAndCount({
-      skip,
-      take: query.limit,
-      placeId: query.placeId,
-      from: fromDate,
-      to: toDate,
-      includeCanceled: query.includeCanceled,
-    });
-
-    const activeItems = items.filter((item) => item.canceledAt === null);
-    const totalQuantity = activeItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalDeliveredCents = activeItems.reduce((sum, item) => sum + item.totalCents, 0);
+    const { items, total, totalQuantity, totalDeliveredCents } =
+      await this.deliveriesRepository.findManyAndCount({
+        skip,
+        take: query.limit,
+        placeId: query.placeId,
+        from: fromDate,
+        to: toDate,
+      });
 
     return {
       items,
@@ -103,25 +98,17 @@ export class DeliveriesService {
       throw new NotFoundError('Delivery not found');
     }
 
-    if (existing.canceledAt !== null) {
-      throw new ConflictError('Cannot edit a canceled delivery');
-    }
-
     const totalCents = calculateDeliveryTotalCents(input.quantity, existing.unitCents);
     return this.deliveriesRepository.updateQuantity(id, input.quantity, totalCents);
   }
 
-  async cancelDelivery(id: number, input: CancelDeliveryInput): Promise<Delivery> {
+  async deleteDelivery(id: number): Promise<void> {
     const existing = await this.deliveriesRepository.findById(id);
 
     if (!existing) {
       throw new NotFoundError('Delivery not found');
     }
 
-    if (existing.canceledAt !== null) {
-      throw new ConflictError('Delivery is already canceled');
-    }
-
-    return this.deliveriesRepository.cancel(id, input.reason, new Date());
+    await this.deliveriesRepository.deleteById(id);
   }
 }

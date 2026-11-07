@@ -45,24 +45,22 @@ model Price {
   unitCents Int
   validFrom DateTime  @db.Date
   validTo   DateTime? @db.Date
-  place     Place     @relation(fields: [placeId], references: [id])
+  place     Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
 
   @@index([placeId, validFrom])
 }
 
 model Delivery {
-  id           Int       @id @default(autoincrement())
-  placeId      Int
-  createdBy    Int
-  date         DateTime  @db.Date
-  quantity     Int
-  unitCents    Int       // frozen at creation time
-  totalCents   Int
-  canceledAt   DateTime?
-  cancelReason String?
-  place        Place     @relation(fields: [placeId], references: [id])
-  user         User      @relation(fields: [createdBy], references: [id])
-  createdAt    DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  placeId    Int
+  createdBy  Int
+  date       DateTime @db.Date
+  quantity   Int
+  unitCents  Int      // frozen at creation time
+  totalCents Int
+  place      Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [createdBy], references: [id])
+  createdAt  DateTime @default(now())
 
   @@index([placeId, date])
 }

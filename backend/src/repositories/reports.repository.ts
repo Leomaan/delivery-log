@@ -18,7 +18,6 @@ export class ReportsRepository {
     params: FindActiveDeliveriesReportParams,
   ): Promise<DeliveryWithPlace[]> {
     const where: Prisma.DeliveryWhereInput = {
-      canceledAt: null,
       ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
       ...(params.from !== undefined || params.to !== undefined
         ? {

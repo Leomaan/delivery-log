@@ -6,10 +6,7 @@ export interface CreateDeliveryInTxParams {
   createdBy: number;
   date: Date;
   quantity: number;
-  resolvePriceAndCreate: (context: {
-    place: Place | null;
-    activePrice: Price | null;
-  }) => {
+  resolvePriceAndCreate: (context: { place: Place | null; activePrice: Price | null }) => {
     unitCents: number;
     totalCents: number;
   };
@@ -21,7 +18,6 @@ export interface ListDeliveriesRepoParams {
   placeId?: number;
   from?: Date;
   to?: Date;
-  includeCanceled: boolean;
 }
 
 export class DeliveriesRepository {
@@ -66,12 +62,14 @@ export class DeliveriesRepository {
     });
   }
 
-  async findManyAndCount(
-    params: ListDeliveriesRepoParams,
-  ): Promise<{ items: Delivery[]; total: number }> {
+  async findManyAndCount(params: ListDeliveriesRepoParams): Promise<{
+    items: Delivery[];
+    total: number;
+    totalQuantity: number;
+    totalDeliveredCents: number;
+  }> {
     const where: Prisma.DeliveryWhereInput = {
       ...(params.placeId !== undefined ? { placeId: params.placeId } : {}),
-      ...(!params.includeCanceled ? { canceledAt: null } : {}),
       ...(params.from !== undefined || params.to !== undefined
         ? {
             date: {
@@ -82,7 +80,7 @@ export class DeliveriesRepository {
         : {}),
     };
 
-    const [items, total] = await this.db.$transaction([
+    const [items, total, aggregate] = await this.db.$transaction([
       this.db.delivery.findMany({
         where,
         skip: params.skip,
@@ -90,9 +88,21 @@ export class DeliveriesRepository {
         orderBy: [{ date: 'desc' }, { id: 'desc' }],
       }),
       this.db.delivery.count({ where }),
+      this.db.delivery.aggregate({
+        where,
+        _sum: {
+          quantity: true,
+          totalCents: true,
+        },
+      }),
     ]);
 
-    return { items, total };
+    return {
+      items,
+      total,
+      totalQuantity: aggregate._sum.quantity ?? 0,
+      totalDeliveredCents: aggregate._sum.totalCents ?? 0,
+    };
   }
 
   async updateQuantity(id: number, quantity: number, totalCents: number): Promise<Delivery> {
@@ -105,13 +115,9 @@ export class DeliveriesRepository {
     });
   }
 
-  async cancel(id: number, reason: string, canceledAt: Date): Promise<Delivery> {
-    return this.db.delivery.update({
+  async deleteById(id: number): Promise<void> {
+    await this.db.delivery.delete({
       where: { id },
-      data: {
-        canceledAt,
-        cancelReason: reason,
-      },
     });
   }
 }

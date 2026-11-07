@@ -17,5 +17,5 @@ export async function deliveriesRoutes(
   app.post('/', controller.create);
   app.get('/', controller.list);
   app.patch('/:id', controller.update);
-  app.post('/:id/cancel', controller.cancel);
+  app.delete('/:id', controller.delete);
 }

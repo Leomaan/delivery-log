@@ -41,11 +41,10 @@ function getPeriodKey(date: Date, groupBy: 'day' | 'week' | 'month'): string {
     return `${year}-${month}`;
   }
 
-  // groupBy === 'week': Monday of the UTC week (YYYY-MM-DD)
+  // groupBy === 'week': Sunday of the UTC week (Domingo a Sábado)
   const dayOfWeek = date.getUTCDay(); // 0 (Sun) to 6 (Sat)
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = addUtcDays(date, diffToMonday);
-  return formatUtcDateOnly(monday);
+  const sunday = addUtcDays(date, -dayOfWeek);
+  return formatUtcDateOnly(sunday);
 }
 
 export class ReportsService {

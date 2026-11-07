@@ -41,13 +41,18 @@ export class PlacesRepository {
     return { items, total };
   }
 
-  async update(
-    id: number,
-    data: { name?: string; active?: boolean },
-  ): Promise<Place> {
+  async update(id: number, data: { name?: string; active?: boolean }): Promise<Place> {
     return this.db.place.update({
       where: { id },
       data,
     });
+  }
+
+  async deleteById(id: number): Promise<void> {
+    await this.db.$transaction([
+      this.db.delivery.deleteMany({ where: { placeId: id } }),
+      this.db.price.deleteMany({ where: { placeId: id } }),
+      this.db.place.delete({ where: { id } }),
+    ]);
   }
 }

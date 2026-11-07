@@ -19,4 +19,5 @@ export async function placesRoutes(
   app.get('/:id', controller.getById);
   app.patch('/:id', controller.update);
   app.post('/:id/deactivate', controller.deactivate);
+  app.delete('/:id', controller.delete);
 }

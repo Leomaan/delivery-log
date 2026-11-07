@@ -50,4 +50,9 @@ export class PlacesService {
     await this.getPlaceById(id);
     return this.placesRepository.update(id, { active: false });
   }
+
+  async deletePlace(id: number): Promise<void> {
+    await this.getPlaceById(id);
+    await this.placesRepository.deleteById(id);
+  }
 }

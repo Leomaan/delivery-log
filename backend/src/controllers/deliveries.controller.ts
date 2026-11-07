@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
-  cancelDeliverySchema,
   createDeliverySchema,
   deliveryIdParamSchema,
   listDeliveriesQuerySchema,
@@ -30,10 +29,9 @@ export class DeliveriesController {
     await reply.status(200).send(delivery);
   };
 
-  cancel = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+  delete = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const { id } = deliveryIdParamSchema.parse(request.params);
-    const input = cancelDeliverySchema.parse(request.body);
-    const delivery = await this.deliveriesService.cancelDelivery(id, input);
-    await reply.status(200).send(delivery);
+    await this.deliveriesService.deleteDelivery(id);
+    await reply.status(204).send();
   };
 }

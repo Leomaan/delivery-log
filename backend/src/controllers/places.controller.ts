@@ -40,4 +40,10 @@ export class PlacesController {
     const place = await this.placesService.deactivatePlace(id);
     await reply.status(200).send(place);
   };
+
+  delete = async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    const { id } = placeIdParamSchema.parse(request.params);
+    await this.placesService.deletePlace(id);
+    await reply.status(204).send();
+  };
 }
