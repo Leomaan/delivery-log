@@ -36,7 +36,7 @@ describe('Deliveries Routes Integration Tests', () => {
     }
   });
 
-  it('POST /api/v1/deliveries, GET /api/v1/deliveries, and POST /api/v1/deliveries/:id/cancel work end-to-end', async () => {
+  it('POST /api/v1/deliveries, GET /api/v1/deliveries, PATCH /api/v1/deliveries/:id, and DELETE /api/v1/deliveries/:id work end-to-end', async () => {
     const server = await buildApp({ pricesService, deliveriesService });
     app = server;
 
@@ -107,32 +107,32 @@ describe('Deliveries Routes Integration Tests', () => {
     expect(listBody.totalQuantity).toBe(10);
     expect(listBody.totalDeliveredCents).toBe(18500);
 
-    // Cancel without reason fails with 400
-    const badCancelRes = await server.inject({
-      method: 'POST',
-      url: `/api/v1/deliveries/${String(created.id)}/cancel`,
+    // Update quantity via PATCH
+    const patchRes = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/deliveries/${String(created.id)}`,
       headers,
-      payload: { reason: '' },
+      payload: { quantity: 14 },
     });
-    expect(badCancelRes.statusCode).toBe(400);
+    expect(patchRes.statusCode).toBe(200);
+    expect(patchRes.json<Delivery>().quantity).toBe(14);
+    expect(patchRes.json<Delivery>().totalCents).toBe(25900);
 
-    // Valid cancel succeeds and removes from active totals
-    const cancelRes = await server.inject({
-      method: 'POST',
-      url: `/api/v1/deliveries/${String(created.id)}/cancel`,
+    // Delete delivery via DELETE
+    const deleteRes = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/deliveries/${String(created.id)}`,
       headers,
-      payload: { reason: 'Client canceled order before dispatch' },
     });
-    expect(cancelRes.statusCode).toBe(200);
-    expect(cancelRes.json<Delivery>().cancelReason).toBe('Client canceled order before dispatch');
+    expect(deleteRes.statusCode).toBe(204);
 
-    const postCancelList = await server.inject({
+    const postDeleteList = await server.inject({
       method: 'GET',
       url: '/api/v1/deliveries?placeId=1',
       headers,
     });
-    expect(postCancelList.statusCode).toBe(200);
-    expect(postCancelList.json<{ total: number; totalDeliveredCents: number }>()).toMatchObject({
+    expect(postDeleteList.statusCode).toBe(200);
+    expect(postDeleteList.json<{ total: number; totalDeliveredCents: number }>()).toMatchObject({
       total: 0,
       totalDeliveredCents: 0,
     });

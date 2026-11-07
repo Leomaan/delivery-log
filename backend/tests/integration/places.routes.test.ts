@@ -51,7 +51,7 @@ describe('Places Routes Integration Tests', () => {
     const patchRes = await server.inject({
       method: 'PATCH',
       url: `/api/v1/places/${String(created.id)}`,
-        headers,
+      headers,
       payload: { name: 'Cantina Sul - Bloco B' },
     });
 
@@ -77,5 +77,12 @@ describe('Places Routes Integration Tests', () => {
     const listBody = listRes.json<{ items: Place[]; total: number }>();
     expect(listBody.total).toBe(1);
     expect(listBody.items[0]?.id).toBe(created.id);
+
+    const deleteRes = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/places/${String(created.id)}`,
+      headers,
+    });
+    expect(deleteRes.statusCode).toBe(204);
   });
 });

@@ -116,14 +116,12 @@ describe('Phase 2 & 3 — Database Schema, Constraints & Seed', () => {
             "quantity" INTEGER NOT NULL,
             "unitCents" INTEGER NOT NULL,
             "totalCents" INTEGER NOT NULL,
-            "canceledAt" TIMESTAMP(3),
-            "cancelReason" TEXT,
             "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT "Delivery_pkey" PRIMARY KEY ("id"),
             CONSTRAINT "Delivery_quantity_check" CHECK ("quantity" > 0),
             CONSTRAINT "Delivery_unitCents_check" CHECK ("unitCents" > 0),
             CONSTRAINT "Delivery_totalCents_check" CHECK ("totalCents" = "quantity" * "unitCents"),
-            CONSTRAINT "Delivery_placeId_fkey" FOREIGN KEY ("placeId") REFERENCES "Place"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+            CONSTRAINT "Delivery_placeId_fkey" FOREIGN KEY ("placeId") REFERENCES "Place"("id") ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT "Delivery_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
           )
         `;

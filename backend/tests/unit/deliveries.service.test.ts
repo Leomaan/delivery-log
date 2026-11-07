@@ -5,10 +5,13 @@ import type {
   DeliveriesRepository,
   ListDeliveriesRepoParams,
 } from '../../src/repositories/deliveries.repository';
-import type { CreatePriceRepoInput, PricesRepository } from '../../src/repositories/prices.repository';
+import type {
+  CreatePriceRepoInput,
+  PricesRepository,
+} from '../../src/repositories/prices.repository';
 import { DeliveriesService } from '../../src/services/deliveries.service';
 import { PricesService } from '../../src/services/prices.service';
-import { ConflictError, NotFoundError, ValidationError } from '../../src/shared/errors';
+import { NotFoundError, ValidationError } from '../../src/shared/errors';
 
 export class InMemoryDeliveriesStore {
   public places: Place[] = [];
@@ -64,7 +67,7 @@ export class InMemoryDeliveriesStore {
 
   public asDeliveriesRepository(): Pick<
     DeliveriesRepository,
-    'createWithFrozenPrice' | 'findById' | 'findManyAndCount' | 'updateQuantity' | 'cancel'
+    'createWithFrozenPrice' | 'findById' | 'findManyAndCount' | 'updateQuantity' | 'deleteById'
   > {
     return {
       createWithFrozenPrice: async (params: CreateDeliveryInTxParams): Promise<Delivery> => {
@@ -94,8 +97,6 @@ export class InMemoryDeliveriesStore {
           quantity: params.quantity,
           unitCents,
           totalCents,
-          canceledAt: null,
-          cancelReason: null,
           createdAt: new Date('2026-01-10T12:00:00.000Z'),
         };
 
@@ -109,21 +110,30 @@ export class InMemoryDeliveriesStore {
 
       findManyAndCount: async (
         params: ListDeliveriesRepoParams,
-      ): Promise<{ items: Delivery[]; total: number }> => {
+      ): Promise<{
+        items: Delivery[];
+        total: number;
+        totalQuantity: number;
+        totalDeliveredCents: number;
+      }> => {
         const filtered = this.deliveries.filter((d) => {
           if (params.placeId !== undefined && d.placeId !== params.placeId) return false;
-          if (!params.includeCanceled && d.canceledAt !== null) return false;
           if (params.from && d.date.getTime() < params.from.getTime()) return false;
           if (params.to && d.date.getTime() > params.to.getTime()) return false;
           return true;
         });
 
-        const sorted = filtered.sort(
-          (a, b) => b.date.getTime() - a.date.getTime() || b.id - a.id,
-        );
+        const sorted = filtered.sort((a, b) => b.date.getTime() - a.date.getTime() || b.id - a.id);
         const items = sorted.slice(params.skip, params.skip + params.take);
+        const totalQuantity = filtered.reduce((sum, d) => sum + d.quantity, 0);
+        const totalDeliveredCents = filtered.reduce((sum, d) => sum + d.totalCents, 0);
 
-        return { items, total: filtered.length };
+        return {
+          items,
+          total: filtered.length,
+          totalQuantity,
+          totalDeliveredCents,
+        };
       },
 
       updateQuantity: async (
@@ -140,14 +150,12 @@ export class InMemoryDeliveriesStore {
         return delivery;
       },
 
-      cancel: async (id: number, reason: string, canceledAt: Date): Promise<Delivery> => {
-        const delivery = this.deliveries.find((d) => d.id === id);
-        if (!delivery) {
+      deleteById: async (id: number): Promise<void> => {
+        const idx = this.deliveries.findIndex((d) => d.id === id);
+        if (idx === -1) {
           throw new NotFoundError('Delivery not found');
         }
-        delivery.canceledAt = canceledAt;
-        delivery.cancelReason = reason;
-        return delivery;
+        this.deliveries.splice(idx, 1);
       },
     };
   }
@@ -208,7 +216,6 @@ describe('DeliveriesService Unit Tests', () => {
       page: 1,
       limit: 20,
       placeId: 1,
-      includeCanceled: false,
     });
 
     const storedJan = listResult.items.find((d) => d.id === janDelivery.id);
@@ -256,7 +263,7 @@ describe('DeliveriesService Unit Tests', () => {
     ).rejects.toThrow(ValidationError);
   });
 
-  it('cancels delivery logically with reason, excludes canceled from totals, and prevents double cancel', async () => {
+  it('deletes a delivery, removes it from totals across pages, and throws NotFoundError if deleted again', async () => {
     await pricesService.createPrice(1, {
       unitCents: 2000,
       validFrom: '2026-01-01',
@@ -274,42 +281,21 @@ describe('DeliveriesService Unit Tests', () => {
       quantity: 8,
     });
 
-    const canceled = await deliveriesService.cancelDelivery(d1.id, {
-      reason: 'Duplicate entry registered by mistake',
-    });
+    await deliveriesService.deleteDelivery(d1.id);
+    expect(store.deliveries).toHaveLength(1);
 
-    expect(canceled.canceledAt).not.toBeNull();
-    expect(canceled.cancelReason).toBe('Duplicate entry registered by mistake');
-    expect(store.deliveries).toHaveLength(2); // Not physically deleted
+    // Deleting again throws NotFoundError
+    await expect(deliveriesService.deleteDelivery(d1.id)).rejects.toThrow(NotFoundError);
 
-    // Cannot cancel twice
-    await expect(
-      deliveriesService.cancelDelivery(d1.id, { reason: 'Second cancel' }),
-    ).rejects.toThrow(ConflictError);
-
-    // Default listing excludes canceled deliveries
     const activeList = await deliveriesService.listDeliveries({
       page: 1,
       limit: 20,
       placeId: 1,
-      includeCanceled: false,
     });
 
     expect(activeList.total).toBe(1);
     expect(activeList.totalQuantity).toBe(8);
     expect(activeList.totalDeliveredCents).toBe(16000);
-
-    // Even when includeCanceled=true, canceled deliveries do not enter active totals
-    const allList = await deliveriesService.listDeliveries({
-      page: 1,
-      limit: 20,
-      placeId: 1,
-      includeCanceled: true,
-    });
-
-    expect(allList.total).toBe(2);
-    expect(allList.totalQuantity).toBe(8);
-    expect(allList.totalDeliveredCents).toBe(16000);
   });
 
   it('updates delivery quantity preserving the original frozen unitCents even after price changes', async () => {

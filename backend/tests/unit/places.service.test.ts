@@ -1,12 +1,15 @@
 import type { Place } from '@prisma/client';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ListPlacesRepoParams, PlacesRepository } from '../../src/repositories/places.repository';
+import type {
+  ListPlacesRepoParams,
+  PlacesRepository,
+} from '../../src/repositories/places.repository';
 import { PlacesService } from '../../src/services/places.service';
 import { NotFoundError } from '../../src/shared/errors';
 
 export class InMemoryPlacesRepository implements Pick<
   PlacesRepository,
-  'create' | 'findById' | 'findManyAndCount' | 'update'
+  'create' | 'findById' | 'findManyAndCount' | 'update' | 'deleteById'
 > {
   public places: Place[] = [];
   private nextId = 1;
@@ -51,6 +54,14 @@ export class InMemoryPlacesRepository implements Pick<
     }
     return place;
   }
+
+  async deleteById(id: number): Promise<void> {
+    const idx = this.places.findIndex((p) => p.id === id);
+    if (idx === -1) {
+      throw new NotFoundError('Place not found');
+    }
+    this.places.splice(idx, 1);
+  }
 }
 
 describe('PlacesService Unit Tests', () => {
@@ -81,13 +92,17 @@ describe('PlacesService Unit Tests', () => {
 
     expect(activeOnly.total).toBe(1);
     expect(activeOnly.items[0]?.name).toBe('Oficina Norte');
+
+    await placesService.deletePlace(placeA.id);
+    expect(repo.places).toHaveLength(1);
   });
 
-  it('throws NotFoundError when updating or deactivating non-existent place', async () => {
+  it('throws NotFoundError when updating, deactivating, or deleting non-existent place', async () => {
     await expect(placesService.getPlaceById(999)).rejects.toThrow(NotFoundError);
     await expect(placesService.updatePlace(999, { name: 'Novo Nome' })).rejects.toThrow(
       NotFoundError,
     );
     await expect(placesService.deactivatePlace(999)).rejects.toThrow(NotFoundError);
+    await expect(placesService.deletePlace(999)).rejects.toThrow(NotFoundError);
   });
 });

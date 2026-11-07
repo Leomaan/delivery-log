@@ -16,7 +16,6 @@ export class InMemoryReportsRepository implements Pick<ReportsRepository, 'findA
   ): Promise<DeliveryWithPlace[]> {
     return this.records
       .filter((r) => {
-        if (r.canceledAt !== null) return false;
         if (params.placeId !== undefined && r.placeId !== params.placeId) return false;
         if (params.from && r.date.getTime() < params.from.getTime()) return false;
         if (params.to && r.date.getTime() > params.to.getTime()) return false;
@@ -59,8 +58,6 @@ describe('ReportsService Unit Tests (Phase 6/7 — Expected Value & Price Histor
         quantity: 25,
         unitCents: 1800,
         totalCents: 45000,
-        canceledAt: null,
-        cancelReason: null,
         createdAt: new Date(),
         place: { id: 1, name: 'Prefeitura', active: true },
       },
@@ -72,8 +69,6 @@ describe('ReportsService Unit Tests (Phase 6/7 — Expected Value & Price Histor
         quantity: 12,
         unitCents: 2100,
         totalCents: 25200,
-        canceledAt: null,
-        cancelReason: null,
         createdAt: new Date(),
         place: { id: 2, name: 'Fórum', active: true },
       },
@@ -85,21 +80,6 @@ describe('ReportsService Unit Tests (Phase 6/7 — Expected Value & Price Histor
         quantity: 10,
         unitCents: 2000,
         totalCents: 20000,
-        canceledAt: null,
-        cancelReason: null,
-        createdAt: new Date(),
-        place: { id: 1, name: 'Prefeitura', active: true },
-      },
-      {
-        id: 4,
-        placeId: 1,
-        createdBy: 1,
-        date: parseUtcDateOnly('2026-01-15'),
-        quantity: 5,
-        unitCents: 2000,
-        totalCents: 10000,
-        canceledAt: new Date(),
-        cancelReason: 'Canceled test entry',
         createdAt: new Date(),
         place: { id: 1, name: 'Prefeitura', active: true },
       },
@@ -111,8 +91,6 @@ describe('ReportsService Unit Tests (Phase 6/7 — Expected Value & Price Histor
         quantity: 10,
         unitCents: 2100,
         totalCents: 21000,
-        canceledAt: null,
-        cancelReason: null,
         createdAt: new Date(),
         place: { id: 2, name: 'Fórum', active: true },
       },
@@ -166,9 +144,9 @@ describe('ReportsService Unit Tests (Phase 6/7 — Expected Value & Price Histor
 
     const byWeek = await reportsService.getSummary({ groupBy: 'week' });
     expect(byWeek.byPeriod).toEqual([
-      { period: '2026-01-05', totalQuantity: 37, expectedAmountCents: 70200 },
-      { period: '2026-01-12', totalQuantity: 10, expectedAmountCents: 20000 },
-      { period: '2026-02-02', totalQuantity: 10, expectedAmountCents: 21000 },
+      { period: '2026-01-04', totalQuantity: 37, expectedAmountCents: 70200 },
+      { period: '2026-01-11', totalQuantity: 10, expectedAmountCents: 20000 },
+      { period: '2026-02-01', totalQuantity: 10, expectedAmountCents: 21000 },
     ]);
   });
 
