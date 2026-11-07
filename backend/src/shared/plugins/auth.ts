@@ -9,6 +9,10 @@ export async function registerAuthPlugins(app: FastifyInstance): Promise<void> {
 
   await app.register(jwt, {
     secret: env.JWT_SECRET,
+    cookie: {
+      cookieName: 'accessToken',
+      signed: false,
+    },
     sign: {
       expiresIn: '15m',
     },

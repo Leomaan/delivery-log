@@ -28,7 +28,15 @@ export function errorHandler(
     return;
   }
 
-  const fastifyErr = error as FastifyError;
+  const fastifyErr = error as FastifyError & { code?: string };
+
+  if (fastifyErr.code === 'P2002') {
+    reply.status(409).send({
+      code: 'CONFLICT',
+      message: 'Place with this name already exists',
+    });
+    return;
+  }
 
   if (fastifyErr.statusCode === 429) {
     reply.status(429).send({
