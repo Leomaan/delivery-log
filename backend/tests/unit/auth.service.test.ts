@@ -1,7 +1,10 @@
 import argon2 from 'argon2';
 import type { RefreshToken, User } from '@prisma/client';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { AuthRepository, CreateRefreshTokenData } from '../../src/repositories/auth.repository';
+import type {
+  AuthRepository,
+  CreateRefreshTokenData,
+} from '../../src/repositories/auth.repository';
 import { AuthService, hashRefreshToken } from '../../src/services/auth.service';
 import { UnauthorizedError } from '../../src/shared/errors';
 
@@ -39,9 +42,7 @@ export class InMemoryAuthRepository implements Pick<
     return token;
   }
 
-  async findRefreshTokenByHash(
-    tokenHash: string,
-  ): Promise<(RefreshToken & { user: User }) | null> {
+  async findRefreshTokenByHash(tokenHash: string): Promise<(RefreshToken & { user: User }) | null> {
     const token = this.refreshTokens.find((t) => t.tokenHash === tokenHash);
     if (!token) return null;
     const user = this.users.find((u) => u.id === token.userId);

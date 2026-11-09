@@ -1,6 +1,9 @@
 import type { Place, Price } from '@prisma/client';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { CreatePriceRepoInput, PricesRepository } from '../../src/repositories/prices.repository';
+import type {
+  CreatePriceRepoInput,
+  PricesRepository,
+} from '../../src/repositories/prices.repository';
 import { PricesService } from '../../src/services/prices.service';
 import { NotFoundError, ValidationError } from '../../src/shared/errors';
 import { formatUtcDateOnly } from '../../src/shared/lib/date';

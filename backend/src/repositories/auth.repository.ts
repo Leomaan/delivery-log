@@ -28,9 +28,7 @@ export class AuthRepository {
     });
   }
 
-  async findRefreshTokenByHash(
-    tokenHash: string,
-  ): Promise<(RefreshToken & { user: User }) | null> {
+  async findRefreshTokenByHash(tokenHash: string): Promise<(RefreshToken & { user: User }) | null> {
     return this.db.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },

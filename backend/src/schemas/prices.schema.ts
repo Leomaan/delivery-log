@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
-const isoDateString = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
+const isoDateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
 export const placeIdForPricesParamSchema = z.object({
   id: z.coerce.number().int().positive('Place id must be a positive integer'),

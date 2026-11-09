@@ -44,9 +44,7 @@ export class PricesService {
 
     // If there is a future price starting after validFrom and validTo was not specified,
     // automatically cap validTo at the day before the next future price starts.
-    const nextFuturePrice = existingPrices.find(
-      (p) => p.validFrom.getTime() > validFrom.getTime(),
-    );
+    const nextFuturePrice = existingPrices.find((p) => p.validFrom.getTime() > validFrom.getTime());
     if (nextFuturePrice && validTo === null) {
       validTo = addUtcDays(nextFuturePrice.validFrom, -1);
     }

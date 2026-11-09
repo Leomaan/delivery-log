@@ -41,7 +41,9 @@ export function getLoggerOptions(): FastifyServerOptions['logger'] {
   };
 }
 
-export function generateRequestId(req: { headers: Record<string, string | string[] | undefined> }): string {
+export function generateRequestId(req: {
+  headers: Record<string, string | string[] | undefined>;
+}): string {
   const existingId = req.headers['x-request-id'];
   if (typeof existingId === 'string' && existingId.trim().length > 0) {
     return existingId.trim();
