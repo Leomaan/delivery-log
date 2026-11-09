@@ -1,4 +1,4 @@
-# Lunch Tracker — Ponto 10
+# Lunch Tracker
 
 Sistema para registro e controle financeiro de entregas diárias de refeições (quentinhas) e recebimentos por local.
 
