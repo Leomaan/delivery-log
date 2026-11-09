@@ -327,9 +327,9 @@ model Payment {
 
 ## 7. Registro de decisões
 
-| Data       | Decisão                                                                                                                                                                             | Responsável |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 2026-11-05 | Adotar Monorepo Leve com `pnpm workspaces` na raiz (gerenciando ESLint, Prettier, Husky, lint-staged e `tsconfig.base.json`) e criar diretórios de módulos sob demanda a cada fase. | Responsável |
-| 2026-11-06 | Adotar modelo de função única (uso individual sem múltiplos papéis `ADMIN`/`OPERATOR`) nesta etapa, mantendo autenticação completa (`User`, `RefreshToken`, `createdBy`).           | Responsável |
-| 2026-11-06 | Organizar o código por camada na raiz de `src/` (`controllers/`, `services/`, `repositories/`, `routes/`, `schemas/`) e manter todos os testes separados em `tests/unit/` e `tests/integration/`. | Responsável |
+| Data       | Decisão                                                                                                                                                                                                            | Responsável |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| 2026-11-05 | Adotar Monorepo Leve com `pnpm workspaces` na raiz (gerenciando ESLint, Prettier, Husky, lint-staged e `tsconfig.base.json`) e criar diretórios de módulos sob demanda a cada fase.                                | Responsável |
+| 2026-11-06 | Adotar modelo de função única (uso individual sem múltiplos papéis `ADMIN`/`OPERATOR`) nesta etapa, mantendo autenticação completa (`User`, `RefreshToken`, `createdBy`).                                          | Responsável |
+| 2026-11-06 | Organizar o código por camada na raiz de `src/` (`controllers/`, `services/`, `repositories/`, `routes/`, `schemas/`) e manter todos os testes separados em `tests/unit/` e `tests/integration/`.                  | Responsável |
 | 2026-11-06 | Remover módulo `Payments` e focar o sistema como organizador e conferência de valores esperados por tipo de quentinha (ex.: Prefeitura, Saúde, Fórum), com histórico de preços por data congelado em cada entrega. | Responsável |

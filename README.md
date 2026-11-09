@@ -71,19 +71,19 @@ lunch-tracker/
 
 ## Scripts Disponíveis (Raiz)
 
-| Comando          | Descrição                                                 |
-| ---------------- | --------------------------------------------------------- |
+| Comando             | Descrição                                                 |
+| ------------------- | --------------------------------------------------------- |
 | `pnpm dev`          | Inicia o backend em modo watch (`tsx`)                    |
 | `pnpm dev:frontend` | Inicia o frontend React + Vite em `http://localhost:5173` |
 | `pnpm build`        | Compila backend e frontend para produção                  |
-| `pnpm start`       | Executa a versão compilada de produção                    |
-| `pnpm db:generate` | Gera o Prisma Client a partir do `schema.prisma`          |
-| `pnpm db:migrate`  | Executa as migrations do banco de dados (`migrate dev`)   |
-| `pnpm db:seed`     | Popula o banco com dados iniciais de desenvolvimento      |
-| `pnpm lint`        | Executa o ESLint em todo o repositório                    |
-| `pnpm format`    | Formata os arquivos com Prettier                          |
-| `pnpm typecheck`   | Verifica a tipagem estrita do TypeScript (`tsc --noEmit`) |
-| `pnpm test`        | Executa a suíte de testes com Vitest                      |
+| `pnpm start`        | Executa a versão compilada de produção                    |
+| `pnpm db:generate`  | Gera o Prisma Client a partir do `schema.prisma`          |
+| `pnpm db:migrate`   | Executa as migrations do banco de dados (`migrate dev`)   |
+| `pnpm db:seed`      | Popula o banco com dados iniciais de desenvolvimento      |
+| `pnpm lint`         | Executa o ESLint em todo o repositório                    |
+| `pnpm format`       | Formata os arquivos com Prettier                          |
+| `pnpm typecheck`    | Verifica a tipagem estrita do TypeScript (`tsc --noEmit`) |
+| `pnpm test`         | Executa a suíte de testes com Vitest                      |
 
 ## Documentação da API (OpenAPI / Swagger)
 
