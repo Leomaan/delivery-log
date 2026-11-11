@@ -34,6 +34,7 @@ export function useAuth() {
     try {
       await httpClient.post<unknown>('/auth/logout');
     } finally {
+      httpClient.setAccessToken(null);
       httpClient.invalidateCache();
       setUser(null);
     }

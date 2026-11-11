@@ -1,0 +1,10 @@
+{
+  "files.watcherExclude": {
+    "**/release/**": true,
+    "**/*.asar": true
+  },
+  "search.exclude": {
+    "**/release/**": true,
+    "**/*.asar": true
+  }
+}

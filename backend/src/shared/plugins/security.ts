@@ -9,8 +9,21 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     global: true,
   });
 
+  const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+
   await app.register(cors, {
-    origin: env.CORS_ORIGIN,
+    origin: (origin, cb) => {
+      if (
+        !origin ||
+        origin === 'null' ||
+        origin.startsWith('file://') ||
+        allowedOrigins.includes(origin)
+      ) {
+        cb(null, true);
+        return;
+      }
+      cb(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

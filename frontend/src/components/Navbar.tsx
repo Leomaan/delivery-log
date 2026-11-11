@@ -1,4 +1,5 @@
-import { BarChart3, ClipboardList, LogOut, Settings2, Utensils } from 'lucide-react';
+import { BarChart3, ClipboardList, Download, LogOut, Settings2, Utensils } from 'lucide-react';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 import type { ActiveTab } from '../types/domain';
 import { Button } from './ui/Button';
 
@@ -15,6 +16,8 @@ const NAV_ITEMS: { id: ActiveTab; label: string; Icon: typeof ClipboardList }[] 
 ];
 
 export function Navbar({ activeTab, onTabChange, onLogout }: NavbarProps) {
+  const { canInstall, promptInstall } = usePwaInstall();
+
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -46,10 +49,24 @@ export function Navbar({ activeTab, onTabChange, onLogout }: NavbarProps) {
           ))}
         </nav>
 
-        <Button variant="ghost" size="sm" onClick={() => void onLogout()} title="Sair">
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Sair</span>
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {canInstall && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void promptInstall()}
+              title="Instalar aplicativo no dispositivo"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Instalar App</span>
+            </Button>
+          )}
+
+          <Button variant="ghost" size="sm" onClick={() => void onLogout()} title="Sair">
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sair</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

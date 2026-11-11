@@ -5,7 +5,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
+    ignores: ['**/dist/**', '**/release/**', '**/node_modules/**', '**/coverage/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strict,
@@ -17,6 +17,7 @@ export default tseslint.config(
       globals: {
         ...globals.node,
         ...globals.browser,
+        ...globals.serviceworker,
       },
     },
     rules: {
@@ -25,6 +26,15 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 );

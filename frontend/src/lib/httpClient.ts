@@ -1,6 +1,17 @@
 import { translateApiErrorMessage } from '../utils/error';
 
-const API_BASE = '/api/v1';
+function resolveApiBase(): string {
+  const configured = import.meta.env.VITE_API_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'http://localhost:3333/api/v1';
+  }
+  return '/api/v1';
+}
+
+const API_BASE = resolveApiBase();
 const DEFAULT_CACHE_TTL_MS = 60_000;
 
 interface CacheEntry {
@@ -12,6 +23,11 @@ class HttpClient {
   private cache = new Map<string, CacheEntry>();
   private inFlight = new Map<string, Promise<unknown>>();
   private refreshPromise: Promise<boolean> | null = null;
+  private accessToken: string | null = null;
+
+  public setAccessToken(token: string | null): void {
+    this.accessToken = token;
+  }
 
   public invalidateCache(prefix?: string): void {
     if (!prefix) {
@@ -36,7 +52,14 @@ class HttpClient {
           method: 'POST',
           credentials: 'include',
         });
-        return res.ok;
+        if (!res.ok) {
+          return false;
+        }
+        const body = (await res.json()) as { accessToken?: string };
+        if (body.accessToken) {
+          this.accessToken = body.accessToken;
+        }
+        return true;
       } catch {
         return false;
       } finally {
@@ -51,6 +74,9 @@ class HttpClient {
     const headers = new Headers(init.headers);
     if (init.body && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
+    }
+    if (this.accessToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${this.accessToken}`);
     }
 
     const res = await fetch(`${API_BASE}${path}`, {
@@ -70,9 +96,13 @@ class HttpClient {
       return undefined as T;
     }
 
-    const data = (await res.json()) as T & { message?: string };
+    const data = (await res.json()) as T & { message?: string; accessToken?: string };
     if (!res.ok) {
       throw new Error(translateApiErrorMessage(data.message, res.status));
+    }
+
+    if (data.accessToken) {
+      this.accessToken = data.accessToken;
     }
 
     return data;
